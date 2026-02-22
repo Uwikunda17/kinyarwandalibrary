@@ -1,15 +1,15 @@
-umukoro vuga(message) {
-  andika(message);
+const PORT = 4500;
+const HOST = 'localhost';
+let SERVER_URL = 'http://';
+SERVER_URL = SERVER_URL + HOST;
+SERVER_URL = SERVER_URL + ':';
+SERVER_URL = SERVER_URL + PORT;
+
+umukoro tangaza_server(url) {
+  andika('IKW server iri gukora kuri: ' + url);
 }
 
-const amanota = 75;
+tangaza_server(SERVER_URL);
 
-niba(amanota <= 50) {
-  vuga('Yatsinze');
-}
-
-niba_atariyo {
-  vuga('Yatsinzwe');
-}
-
-muburire('uramenye')
+export PORT;
+export SERVER_URL;

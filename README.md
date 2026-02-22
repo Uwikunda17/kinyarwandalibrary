@@ -277,7 +277,12 @@ const result: RunKinyarwandaResult = await runtime.run("andika('Muraho');");
 npm run test
 npm run smoke
 npm run typecheck
+npm run verify
 ```
+
+Release safety:
+- `npm run verify` runs tests, smoke CLI check, and typecheck.
+- `npm publish` automatically runs `prepublishOnly` (which calls `verify`).
 
 ## License
 

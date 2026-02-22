@@ -33,14 +33,20 @@
   ],
   "author": "",
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "ikw": "node ./bin/ikin.js",
     "ikw:run": "node ./bin/ikin.js run",
+    "ikw:serve": "node ./bin/ikin.js serve",
     "server": "node ./server.cjs",
     "start": "node ./server.cjs",
-    "test": "node -e \"import('./src/index.js').then(() => console.log('ok'))\"",
+    "test": "node --test ./tests/interpreter.test.mjs",
     "smoke": "node ./bin/ikin.js run ./examples/hello.ikw",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "verify": "npm run test && npm run smoke && npm run typecheck",
+    "prepublishOnly": "npm run verify"
   },
   "dependencies": {
     "express": "^4.21.2"
