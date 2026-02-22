@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "ikinyarwanda-lang",
   "version": "1.1.0",
   "description": "A Kinyarwanda scripting language interpreter for web applications.",
@@ -34,9 +34,16 @@
   "author": "",
   "license": "MIT",
   "scripts": {
+    "ikw": "node ./bin/ikin.js",
+    "ikw:run": "node ./bin/ikin.js run",
+    "server": "node ./server.cjs",
+    "start": "node ./server.cjs",
     "test": "node -e \"import('./src/index.js').then(() => console.log('ok'))\"",
     "smoke": "node ./bin/ikin.js run ./examples/hello.ikw",
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

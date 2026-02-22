@@ -1,8 +1,18 @@
-﻿import { runKinyarwanda } from "../src/index.js";
+import { runKinyarwanda, runKinyarwandaScripts } from "../src/index.js";
 
 const codeInput = document.getElementById("code");
 const runButton = document.getElementById("runBtn");
 const output = document.getElementById("output");
+const runtimeNote = document.getElementById("runtimeNote");
+
+if (window.location.protocol === "file:") {
+  runtimeNote.textContent =
+    "Open through http://localhost, not file://. Run: npx serve . then open /docs/index.html";
+} else {
+  runKinyarwandaScripts().catch((error) => {
+    output.textContent = error instanceof Error ? error.message : String(error);
+  });
+}
 
 runButton.addEventListener("click", async () => {
   const previousLog = console.log;

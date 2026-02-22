@@ -5,7 +5,8 @@ import { extname, resolve } from "node:path";
 import process from "node:process";
 import { runKinyarwanda } from "../src/index.js";
 
-const [, , command, filePath] = process.argv;
+const [, , arg1, arg2] = process.argv;
+const { command, filePath } = normalizeArgs(arg1, arg2);
 
 if (!command || command === "help" || command === "--help" || command === "-h") {
   printHelp();
@@ -18,14 +19,11 @@ if (command !== "run") {
   process.exit(1);
 }
 
-if (!filePath) {
-  console.error("Missing file path. Example: ikin run examples/hello.ikw");
-  process.exit(1);
-}
+const scriptPath = filePath || "index.ikw";
 
-const resolvedPath = resolve(process.cwd(), filePath);
+const resolvedPath = resolve(process.cwd(), scriptPath);
 if (extname(resolvedPath) !== ".ikw") {
-  console.error(`Expected a .ikw file, received: ${filePath}`);
+  console.error(`Expected a .ikw file, received: ${scriptPath}`);
   process.exit(1);
 }
 
@@ -44,6 +42,24 @@ try {
   process.exit(1);
 }
 
+function normalizeArgs(firstArg, secondArg) {
+  if (!firstArg) {
+    return { command: "run", filePath: "index.ikw" };
+  }
+
+  if (firstArg === "run") {
+    return { command: "run", filePath: secondArg || "index.ikw" };
+  }
+
+  if (firstArg.endsWith(".ikw")) {
+    return { command: "run", filePath: firstArg };
+  }
+
+  return { command: firstArg, filePath: secondArg };
+}
+
 function printHelp() {
-  console.log(`ikin - Kinyarwanda language CLI\n\nUsage:\n  ikin run <file.ikw>\n  ikin --help`);
+  console.log(
+    "ikin - Kinyarwanda language CLI\n\nUsage:\n  ikin\n  ikin run <file.ikw>\n  ikin <file.ikw>\n  ikin --help\n\nDefaults:\n  if no file is provided, index.ikw is used."
+  );
 }

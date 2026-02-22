@@ -30,12 +30,22 @@ console.log(result.ok); // true
 ## CLI
 
 ```bash
+npx ikin
+npx ikin index.ikw
 npx ikin run examples/hello.ikw
 ```
 
 CLI rules:
 - Accepts only `.ikw` files
+- If no file is provided, it runs `index.ikw`
 - Exits with code `2` when validation fails
+
+NPM shortcuts:
+
+```bash
+npm run ikw
+npm run ikw -- index.ikw
+```
 
 ## Language Keywords
 
