@@ -1,0 +1,88 @@
+﻿:root {
+  --bg: #0e1726;
+  --panel: #13213a;
+  --text: #f2f5f9;
+  --muted: #9fb1cc;
+  --accent: #f8b400;
+  --accent-2: #2ec4b6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top left, #1b2d4d, var(--bg));
+  color: var(--text);
+}
+
+.layout {
+  width: min(980px, 92vw);
+  margin: 40px auto;
+  display: grid;
+  gap: 20px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.eyebrow {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.intro {
+  color: var(--muted);
+  max-width: 70ch;
+}
+
+.panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.two-col {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+pre,
+textarea {
+  width: 100%;
+  background: #0a1020;
+  color: #d9e5ff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 12px;
+  font-family: "Consolas", "Courier New", monospace;
+}
+
+textarea {
+  min-height: 180px;
+  resize: vertical;
+}
+
+button {
+  margin-top: 12px;
+  border: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: #111;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+#output {
+  margin-top: 12px;
+  min-height: 56px;
+}
