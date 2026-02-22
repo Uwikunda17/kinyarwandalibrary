@@ -36,6 +36,7 @@ export interface RunKinyarwandaResult {
   ok: boolean;
   failedLine?: string;
   variables: Record<string, unknown>;
+  exports: Record<string, unknown>;
   results: unknown[];
 }
 

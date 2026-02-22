@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ikinyarwanda Playground</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --card: #161b22;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --accent: #2ea043;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        background: linear-gradient(140deg, #0d1117, #111a2a);
+        color: var(--text);
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 24px auto;
+        padding: 0 16px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid #30363d;
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      h1 {
+        margin: 0 0 8px 0;
+        font-size: 1.6rem;
+      }
+
+      p {
+        margin: 0 0 12px 0;
+        color: var(--muted);
+      }
+
+      textarea,
+      pre {
+        width: 100%;
+        background: #0d1117;
+        color: var(--text);
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        padding: 12px;
+        font-family: Consolas, "Courier New", monospace;
+      }
+
+      textarea {
+        min-height: 260px;
+        resize: vertical;
+      }
+
+      button {
+        margin-top: 12px;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 16px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>Ikinyarwanda Live Playground</h1>
+        <p>Write Kinyarwanda code below and click Run.</p>
+        <textarea id="code">import math from 'math';
+const izina = 'Muraho';
+let agaciro = koresha(math, 'max', 4, 9);
+export agaciro;
+andika(izina, agaciro);</textarea>
+        <button id="runBtn">Run Code</button>
+        <pre id="output">Output will appear here...</pre>
+      </div>
+    </div>
+
+    <script type="module">
+      import { runKinyarwanda } from "./src/index.js";
+
+      const codeEl = document.getElementById("code");
+      const runBtn = document.getElementById("runBtn");
+      const output = document.getElementById("output");
+
+      runBtn.addEventListener("click", async () => {
+        const logs = [];
+        const previousLog = console.log;
+        console.log = (...args) => logs.push(args.map((arg) => String(arg)).join(" "));
+
+        try {
+          const result = await runKinyarwanda(codeEl.value, {
+            dependencies: {
+              math: Math
+            }
+          });
+
+          logs.push("");
+          logs.push("ok: " + result.ok);
+          logs.push("variables: " + JSON.stringify(result.variables, null, 2));
+          logs.push("exports: " + JSON.stringify(result.exports, null, 2));
+          output.textContent = logs.join("\n");
+        } catch (error) {
+          output.textContent = error instanceof Error ? error.message : String(error);
+        } finally {
+          console.log = previousLog;
+        }
+      });
+    </script>
+  </body>
+</html>

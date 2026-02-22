@@ -27,6 +27,9 @@ export async function runKinyarwanda(code, options = {}) {
     functions: new Map(),
     dependencies,
     customCommands: options.commands || {},
+    constBindings: new WeakMap(),
+    exports: Object.create(null),
+    exportBindings: new Map(),
     stopOnValidationFail: options.stopOnValidationFail !== false,
     hooks: {
       onCommandStart: options.onCommandStart,
@@ -46,6 +49,7 @@ export async function runKinyarwanda(code, options = {}) {
         ok: false,
         failedLine: error.line,
         variables: toPlainObject(rootVariables),
+        exports: buildExports(context),
         results
       };
     }
@@ -60,6 +64,7 @@ export async function runKinyarwanda(code, options = {}) {
   return {
     ok: true,
     variables: toPlainObject(rootVariables),
+    exports: buildExports(context),
     results
   };
 }
@@ -118,10 +123,27 @@ async function executeLines(lines, scope, context, results) {
       return { type: RETURN_SIGNAL, value };
     }
 
+    if (line.startsWith("import ")) {
+      await runImportStatement(line, scope, context, results);
+      continue;
+    }
+
+    if (line.startsWith("export ")) {
+      await runExportStatement(line, scope, context, results);
+      continue;
+    }
+
+    const declaration = parseDeclaration(line);
+    if (declaration) {
+      const value = await evaluateToken(declaration.expression, scope, context, results);
+      declareVariable(scope, declaration.variable, value, declaration.kind === "const", context);
+      continue;
+    }
+
     const assignment = parseAssignment(line);
     if (assignment) {
       const value = await evaluateToken(assignment.expression, scope, context, results);
-      setVariable(scope, assignment.variable, value);
+      assignVariable(scope, assignment.variable, value, context);
       continue;
     }
 
@@ -173,6 +195,118 @@ async function runLoop(loop, scope, context, results) {
   }
 
   return null;
+}
+
+async function runImportStatement(line, scope, context) {
+  const normalized = stripTrailingSemicolon(line);
+  const namedMatch = normalized.match(/^import\s*\{(.+)\}\s*from\s*(['"])(.+)\2$/);
+  if (namedMatch) {
+    const specifiers = namedMatch[1]
+      .split(",")
+      .map((token) => token.trim())
+      .filter(Boolean);
+    const dependencyName = namedMatch[3];
+    const dependency = context.dependencies[dependencyName];
+
+    if (dependency === undefined) {
+      throw new Error(`Dependency not found for import: ${dependencyName}`);
+    }
+
+    for (const specifier of specifiers) {
+      const aliasMatch = specifier.match(/^([a-zA-Z_][a-zA-Z0-9_]*)(\s+as\s+([a-zA-Z_][a-zA-Z0-9_]*))?$/);
+      if (!aliasMatch) {
+        throw new Error(`Invalid import specifier: ${specifier}`);
+      }
+
+      const sourceName = aliasMatch[1];
+      const localName = aliasMatch[3] || sourceName;
+
+      if (dependency === null || typeof dependency !== "object" || !(sourceName in dependency)) {
+        throw new Error(`Imported member "${sourceName}" was not found on dependency "${dependencyName}".`);
+      }
+
+      declareVariable(scope, localName, dependency[sourceName], true, context);
+    }
+
+    return;
+  }
+
+  const defaultMatch = normalized.match(
+    /^import\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+from\s+(['"])(.+)\2$/
+  );
+  if (defaultMatch) {
+    const localName = defaultMatch[1];
+    const dependencyName = defaultMatch[3];
+
+    if (!(dependencyName in context.dependencies)) {
+      throw new Error(`Dependency not found for import: ${dependencyName}`);
+    }
+
+    declareVariable(scope, localName, context.dependencies[dependencyName], true, context);
+    return;
+  }
+
+  throw new Error(`Invalid import syntax: ${line}`);
+}
+
+async function runExportStatement(line, scope, context, results) {
+  const normalized = stripTrailingSemicolon(line);
+  const body = normalized.slice("export".length).trim();
+
+  const declaration = parseDeclaration(body);
+  if (declaration) {
+    const value = await evaluateToken(declaration.expression, scope, context, results);
+    declareVariable(scope, declaration.variable, value, declaration.kind === "const", context);
+    setExportBinding(context, declaration.variable, scope, declaration.variable);
+    return;
+  }
+
+  const assignment = parseAssignment(body);
+  if (assignment) {
+    const value = await evaluateToken(assignment.expression, scope, context, results);
+    assignVariable(scope, assignment.variable, value, context);
+    setExportBinding(context, assignment.variable, scope, assignment.variable);
+    return;
+  }
+
+  const namedMatch = body.match(/^\{(.+)\}$/);
+  if (namedMatch) {
+    const specifiers = namedMatch[1]
+      .split(",")
+      .map((token) => token.trim())
+      .filter(Boolean);
+
+    for (const specifier of specifiers) {
+      const aliasMatch = specifier.match(/^([a-zA-Z_][a-zA-Z0-9_]*)(\s+as\s+([a-zA-Z_][a-zA-Z0-9_]*))?$/);
+      if (!aliasMatch) {
+        throw new Error(`Invalid export specifier: ${specifier}`);
+      }
+
+      const variableName = aliasMatch[1];
+      const exportName = aliasMatch[3] || variableName;
+
+      if (!hasVariableInChain(scope, variableName)) {
+        throw new Error(`Cannot export unknown variable: ${variableName}`);
+      }
+
+      setExportBinding(context, exportName, scope, variableName);
+    }
+
+    return;
+  }
+
+  const identifierMatch = body.match(/^([a-zA-Z_][a-zA-Z0-9_]*)$/);
+  if (identifierMatch) {
+    const variableName = identifierMatch[1];
+    if (!hasVariableInChain(scope, variableName)) {
+      throw new Error(`Cannot export unknown variable: ${variableName}`);
+    }
+
+    setExportBinding(context, variableName, scope, variableName);
+    return;
+  }
+
+  throw new Error(`Invalid export syntax: ${line}`);
 }
 
 async function executeScopedBlock(lines, scope, context, results) {
@@ -624,11 +758,116 @@ function stripInlineComment(line) {
   return line;
 }
 
+function parseDeclaration(line) {
+  const normalized = stripTrailingSemicolon(line.trim());
+  const match = normalized.match(/^(const|let)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+)$/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    kind: match[1],
+    variable: match[2],
+    expression: match[3].trim()
+  };
+}
+
+function stripTrailingSemicolon(line) {
+  return line.endsWith(";") ? line.slice(0, -1).trim() : line;
+}
+
+function declareVariable(scope, variableName, value, isConst, context) {
+  if (Object.prototype.hasOwnProperty.call(scope, variableName)) {
+    throw new Error(`Variable already declared in this scope: ${variableName}`);
+  }
+
+  scope[variableName] = value;
+  if (isConst) {
+    markConstBinding(scope, variableName, context);
+  }
+}
+
+function assignVariable(scope, variableName, value, context) {
+  const ownerScope = findOwnerScope(scope, variableName);
+  if (ownerScope && isConstBinding(ownerScope, variableName, context)) {
+    throw new Error(`Cannot reassign const variable: ${variableName}`);
+  }
+
+  setVariable(scope, variableName, value);
+}
+
+function setExportBinding(context, exportName, scope, variableName) {
+  context.exportBindings.set(exportName, {
+    scope,
+    variableName
+  });
+  context.exports[exportName] = resolveVariable(scope, variableName);
+}
+
+function resolveVariable(scope, variableName) {
+  let current = scope;
+  while (current) {
+    if (Object.prototype.hasOwnProperty.call(current, variableName)) {
+      return current[variableName];
+    }
+    current = Object.getPrototypeOf(current);
+  }
+
+  return undefined;
+}
+
+function hasVariableInChain(scope, variableName) {
+  return findOwnerScope(scope, variableName) !== null;
+}
+
+function findOwnerScope(scope, variableName) {
+  let current = scope;
+  while (current) {
+    if (Object.prototype.hasOwnProperty.call(current, variableName)) {
+      return current;
+    }
+    current = Object.getPrototypeOf(current);
+  }
+
+  return null;
+}
+
+function markConstBinding(scope, variableName, context) {
+  const existing = context.constBindings.get(scope);
+  if (existing) {
+    existing.add(variableName);
+    return;
+  }
+
+  context.constBindings.set(scope, new Set([variableName]));
+}
+
+function isConstBinding(scope, variableName, context) {
+  const bindings = context.constBindings.get(scope);
+  return Boolean(bindings && bindings.has(variableName));
+}
+
 function toPlainObject(scope) {
   const output = {};
   for (const key of Object.keys(scope)) {
     output[key] = scope[key];
   }
+  return output;
+}
+
+function buildExports(context) {
+  const output = {};
+
+  for (const [exportName, binding] of context.exportBindings.entries()) {
+    output[exportName] = resolveVariable(binding.scope, binding.variableName);
+  }
+
+  for (const [key, value] of Object.entries(context.exports)) {
+    if (!(key in output)) {
+      output[key] = value;
+    }
+  }
+
   return output;
 }
 

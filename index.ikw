@@ -1,0 +1,13 @@
+umukoro vuga(message) {
+  andika(message);
+}
+
+const amanota = 75;
+
+niba(amanota <= 50) {
+  vuga('Yatsinze');
+}
+
+niba_atariyo {
+  vuga('Yatsinzwe');
+}

@@ -42,12 +42,19 @@ CLI rules:
 Core:
 - `andika(value1, value2, ...)` print to console
 - `muburire(value)` browser alert
+- `const izina = value` declare immutable variable
+- `let izina = value` declare mutable variable
 - `umukoro name(args) { ... }` function
 - `garura value` return from function
 - `subiramo(count) { ... }` loop by count
 - `subiramo(i, start, end) { ... }` range loop
 - `niba(condition) { ... }` if block
 - `niba_atariyo { ... }` else block
+- `import service from 'dependencyName'` import dependency into script scope
+- `import { member, other as alias } from 'dependencyName'` named import from dependency object
+- `export izina` export variable in result object
+- `export { izina as hanze }` named export
+- `export const izina = value` declare and export
 
 DOM:
 - `shyiramo('#selector', value)` set `innerText`
@@ -84,6 +91,7 @@ Dependency keywords (new):
    - `ok`: `true | false`
    - `failedLine`: when validation fails
    - `variables`: final root variable scope
+   - `exports`: variables exported with `export ...`
    - `results`: collected command return values
 
 ## Advanced Runtime Options
@@ -145,6 +153,11 @@ await runKinyarwanda(
 ```
 
 ## HTML Integration
+
+### 0. Simple live editor file
+
+Open `playground.html` in your browser for a local editor, or serve the project and open `docs/playground.html` for a shareable page.  
+You can write Kinyarwanda code in a textarea and run it instantly.
 
 ### 1. Script tags with auto runner
 

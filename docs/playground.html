@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ikinyarwanda Playground</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: "Segoe UI", sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+
+      main {
+        width: min(960px, 92vw);
+        margin: 24px auto;
+      }
+
+      textarea,
+      pre {
+        width: 100%;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 12px;
+        background: #020617;
+        color: #e2e8f0;
+        font-family: Consolas, "Courier New", monospace;
+      }
+
+      textarea {
+        min-height: 240px;
+      }
+
+      button {
+        margin-top: 12px;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-weight: 700;
+        background: #22c55e;
+        color: #04130a;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Ikinyarwanda Playground</h1>
+      <textarea id="code">import math from 'math';
+const izina = 'Muraho';
+let agaciro = koresha(math, 'max', 2, 8);
+export agaciro;
+andika(izina, agaciro);</textarea>
+      <button id="runBtn">Run</button>
+      <pre id="output">Output...</pre>
+    </main>
+
+    <script type="module">
+      import { runKinyarwanda } from "../src/index.js";
+
+      const codeEl = document.getElementById("code");
+      const runBtn = document.getElementById("runBtn");
+      const outputEl = document.getElementById("output");
+
+      runBtn.addEventListener("click", async () => {
+        const lines = [];
+        const previous = console.log;
+        console.log = (...args) => lines.push(args.map((value) => String(value)).join(" "));
+
+        try {
+          const result = await runKinyarwanda(codeEl.value, {
+            dependencies: { math: Math }
+          });
+          lines.push("");
+          lines.push("ok: " + result.ok);
+          lines.push("exports: " + JSON.stringify(result.exports, null, 2));
+          outputEl.textContent = lines.join("\n");
+        } catch (error) {
+          outputEl.textContent = error instanceof Error ? error.message : String(error);
+        } finally {
+          console.log = previous;
+        }
+      });
+    </script>
+  </body>
+</html>
